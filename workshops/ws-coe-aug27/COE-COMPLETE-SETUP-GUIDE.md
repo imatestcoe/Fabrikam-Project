@@ -9,11 +9,12 @@ This guide covers:
 - ✅ Initial Azure/Microsoft 365 login and MFA setup
 - ✅ Creating a GitHub account (if needed)
 - ✅ Forking the Fabrikam project
+- ✅ Cloning your fork for local development (optional)
 - ✅ Deploying to your Azure subscription
-- ✅ Setting up automated CI/CD pipelines
+- ✅ Setting up automated CI/CD pipelines with automated workflow fixing
 - ✅ Configuring authentication and testing
 
-**⏱️ Estimated time: 30-45 minutes**
+**⏱️ Estimated time: 25-35 minutes** *(Reduced due to automated workflow fixing)*
 
 ---
 
@@ -178,6 +179,96 @@ You now have your own copy at: `https://github.com/[your-username]/Fabrikam-Proj
 
 ---
 
+## 💻 Step 3.5: Clone Your Fork (Optional - For Local Development)
+
+**🎯 Goal**: Get a local copy of your forked repository on your computer to run scripts and work with the code locally.
+
+> **💡 When do you need this?** You'll need to clone your repository if you want to:
+> - Run the automated workflow fixing script (`.\scripts\Fix-AzureWorkflows.ps1`)
+> - Make code changes locally using VS Code or other editors
+> - Test the application on your local machine
+> - Use PowerShell scripts for testing and validation
+
+### 3.5.1 Understanding Git Repositories
+
+**💡 What's a repository?** A Git repository is a special `.git/` folder that tracks all changes made to files in a project. Think of it as a complete history of your project that you can sync between GitHub (online) and your computer (local).
+
+### 3.5.2 Prerequisites for Cloning
+
+**Before cloning, ensure you have:**
+- [ ] Git installed on your computer ([Download Git](https://git-scm.com/downloads))
+- [ ] PowerShell or Command Prompt access
+- [ ] Your fork URL ready (something like: `https://github.com/yourusername/Fabrikam-Project`)
+
+### 3.5.3 Cloning Your Fork
+
+**Recommended folder structure:**
+```
+Development/
+└── Fabrikam-Project/    ← Your cloned repository will be here
+```
+
+**Step-by-step cloning process:**
+
+1. **Choose your development location** (e.g., `C:\Development` or `C:\Users\[YourName]\Documents\`)
+
+   > **💡 Pro Tip - Avoid Network Locations:** Synced folder locations, such as OneDrive, are viewed as network locations. For local development we recommend using a local, non-network folder because network locations can sometimes cause issues during builds. The nature of source control such as GitHub provides similar sync and backup benefits that you would get from OneDrive.
+
+2. **Open PowerShell** and navigate to your chosen location:
+   ```powershell
+   # Example: Navigate to your Documents folder
+   cd "C:\Users\$env:USERNAME\Documents"
+   
+   # Or navigate to a Development folder
+   cd "C:\Development"
+   ```
+
+3. **Clone your forked repository**:
+   ```powershell
+   # Replace 'yourusername' with your actual GitHub username
+   git clone https://github.com/yourusername/Fabrikam-Project --origin yourusername
+   ```
+
+4. **Navigate into the cloned repository**:
+   ```powershell
+   cd Fabrikam-Project
+   ```
+
+5. **Verify the clone was successful**:
+   ```powershell
+   # List the contents - you should see all the project files
+   dir
+   
+   # Check your git remotes
+   git remote -v
+   ```
+
+### 3.5.4 Understanding Git Remotes
+
+**📝 Info**: When you clone a git repository, you automatically get a "remote" - this is a pointer (URL) to the online copy of your repository. 
+
+- **Default behavior**: Git would normally call this remote `origin`
+- **Our approach**: We use `--origin yourusername` to make it clearer which fork you're working with
+- **Why this helps**: If you later add the original repository as another remote, you'll easily distinguish between your fork and the original
+
+**Example of what you'll see:**
+```
+yourusername    https://github.com/yourusername/Fabrikam-Project (fetch)
+yourusername    https://github.com/yourusername/Fabrikam-Project (push)
+```
+
+### 3.5.5 Next Steps After Cloning
+
+**Now you can:**
+- ✅ Run the automated workflow script: `.\scripts\Fix-AzureWorkflows.ps1`
+- ✅ Open the project in VS Code: `code .`
+- ✅ Run local testing scripts: `.\test.ps1 -Quick`
+- ✅ Make code changes and commit them back to your fork
+
+> **💡 Tip**: Keep PowerShell open in your project directory - you'll use it for running scripts during the workshop!
+
+---
+
 ## ☁️ Step 4: Deploy to Azure
 
 **🎯 Goal**: Deploy the Fabrikam application to your Azure subscription with proper resource naming.
@@ -193,7 +284,8 @@ You now have your own copy at: `https://github.com/[your-username]/Fabrikam-Proj
    - For example: `rg-fabrikam-coe-imatest`
    - You should see it in your resource groups list
 
-3. **Get your User Object ID** (required for Key Vault permissions setup):
+3. **Get your User Object ID** (needed to grant you Key Vault access):
+   - **Why we need this**: The deployment creates an Azure Key Vault to securely store application secrets. Your User Object ID allows Azure to grant you permission to manage these secrets.
    - Open **Cloud Shell**: Click the terminal icon (`>_`) in the top toolbar
    - Choose **PowerShell** when prompted (recommended for consistency, if you want Bash it's fine)
    - Choose **No storage account required** (You can create one if you want, this is faster)
@@ -202,7 +294,7 @@ You now have your own copy at: `https://github.com/[your-username]/Fabrikam-Proj
      ```powershell
      az ad signed-in-user show --query id -o tsv
      ```
-   - **Copy the result** - you'll need this User Object ID for deployment
+   - **Copy the result** - this is your User Object ID that you'll enter in the ARM template deployment form
 
 ### 4.2 Deploy Using ARM Template
 
@@ -270,9 +362,9 @@ Your Fabrikam project will have **4 GitHub workflow files** in `.github/workflow
 
 ---
 
-**🎯 Goal**: Configure automatic deployment from your GitHub repository to Azure App Services using Azure Portal's Deployment Center, then fix the generated workflows for monorepo compatibility.
+**🎯 Goal**: Configure automatic deployment from your GitHub repository to Azure App Services using Azure Portal's Deployment Center, then fix the generated workflows for monorepo compatibility using our automated script.
 
-> **💡 Alternative Approach**: For advanced users who prefer full control over their CI/CD pipeline, see the [COE Advanced Setup Guide](COE-ADVANCED-SETUP-GUIDE.md) which covers manual workflow creation with optimized monorepo support and path-based triggering.
+> **💡 Simplified Process**: We've automated the workflow fixing process! You'll use a single PowerShell command instead of manual YAML editing, making this much faster and more reliable for workshop environments.
 
 ### 5.1 Configure API App Service Deployment
 
@@ -291,10 +383,12 @@ Your Fabrikam project will have **4 GitHub workflow files** in `.github/workflow
    - **Branch**: Select **main**
 
 5. **Workflow Configuration**:
-   - **Workflow option**: Leave default **"Add a workflow"** selected
+   - **Workflow option**: Leave default **"Add a workflow"** selected ✅
    - **Authentication type**: Leave default
    - **Runtime stack**: Leave default (.NET)
    - **Version**: Leave default
+
+   > **💡 Why "Add a workflow"?** This lets Azure configure all the authentication secrets automatically. We'll fix the monorepo structure afterward with our automated script - much simpler than manual configuration!
 
 6. **Save**: Click **Save** at the top of the Settings pane
 
@@ -318,57 +412,70 @@ Your Fabrikam project will have **4 GitHub workflow files** in `.github/workflow
 
 ### 5.3 Fix Generated Workflows for Monorepo Compatibility
 
-**⚠️ IMPORTANT**: Azure Portal generates workflows that need modification to work with our monorepo structure. I'm still working on automating / eliminating this step for these workshops so we have super simple CI/CD setup with no customization required.
+**✅ AUTOMATED SOLUTION**: Azure Portal generates workflows with automatic authentication, but they need adjustment for our monorepo structure. We've created an automated script to fix this!
 
-1. **Go to your GitHub repository** and navigate to **Actions** tab
+#### **Quick Fix with Automated Script:**
 
-2. **Wait for the initial deployments to complete** (they will likely fail - this is expected)
+1. **Wait for Azure to create workflows** (they may fail initially - this is expected)
 
-3. **Edit the API workflow**:
-   - Go to `.github/workflows/` in your repository
-   - Find the file that starts with your API app service name (e.g., `main_fabrikam-api-development-bb7fsc.yml`)
-   - Click **Edit** (pencil icon)
+2. **Ensure you have a local copy of your repository**:
+   - If you haven't cloned your fork yet, see [Step 3.5: Clone Your Fork](#-step-35-clone-your-fork-optional---for-local-development)
+   - Open PowerShell/Terminal in your cloned repository folder
 
-4. **Update the API workflow** by modifying the `dotnet publish` line under   `jobs:`:
-   ```yaml
-   # Change this line:
-   - name: dotnet publish
-     run: dotnet publish -c Release -o ${{env.DOTNET_ROOT}}/myapp
-
-   # To this:
-   - name: dotnet publish
-     run: dotnet publish FabrikamApi/src/FabrikamApi.csproj -c Release -o ${{env.DOTNET_ROOT}}/myapp
+3. **Run the automated fix script**:
+   ```powershell
+   .\scripts\Fix-AzureWorkflows.ps1
    ```
 
-6. **Commit the API workflow fix**: 
-   - Click **"Commit changes..."** button
-   - Commit message: "Fix API workflow for monorepo"
-   - Click **"Commit changes"**
+   > **💡 Alternative**: If you prefer not to clone locally, you can still do this manually through GitHub's web interface, but the script is much faster and more reliable.
 
-#### Fix MCP Deployment Workflow
-
-7. **Edit the MCP workflow**:
-   - **Go back to `.github/workflows/`** (you'll be redirected to file list after commit)
-   - Find the file that starts with your MCP app service name (e.g., `main_fabrikam-mcp-development-bb7fsc.yml`)
-   - Click the filename → Click **Edit** (pencil icon)
-
-8. **Update the MCP workflow** by modifying the `dotnet publish` line:
-   ```yaml
-   # Change this line:
-   - name: dotnet publish
-     run: dotnet publish -c Release -o ${{env.DOTNET_ROOT}}/myapp
-
-   # To this:
-   - name: dotnet publish
-     run: dotnet publish FabrikamMcp/src/FabrikamMcp.csproj -c Release -o ${{env.DOTNET_ROOT}}/myapp
+4. **Review the script output** - it will show you exactly what was fixed:
+   ```
+   🔍 Scanning for Azure-generated workflow files...
+   💡 This preserves Azure's automatic authentication while fixing monorepo issues.
+   ✅ Found 2 workflow file(s) to fix:
+     - main_fabrikam-api-development-[suffix].yml
+     - main_fabrikam-mcp-development-[suffix].yml
+   
+   🔧 Processing: main_fabrikam-api-development-[suffix].yml
+   💾 Created backup: main_fabrikam-api-development-[suffix].yml.backup
+   ✅ Applied changes:
+     - Fixed dotnet publish command for API service
+     - Fixed dotnet build command to use solution file
+   
+   🔧 Processing: main_fabrikam-mcp-development-[suffix].yml
+   💾 Created backup: main_fabrikam-mcp-development-[suffix].yml.backup
+   ✅ Applied changes:
+     - Fixed dotnet publish command for MCP service
+     - Fixed dotnet build command to use solution file
+   
+   🎉 Workflow fix completed!
+   ✅ Azure's automatic authentication is preserved.
+   ✅ Monorepo project paths are now correctly configured.
    ```
 
-9. **Commit the MCP workflow fix**: 
-   - Click **"Commit changes..."** button  
-   - Commit message: "Fix MCP workflow for monorepo"
-   - Click **"Commit changes"**
+5. **Commit the fixed workflows**:
+   ```powershell
+   git add .github/workflows/
+   git commit -m "Fix Azure workflows for monorepo structure"
+   git push origin main
+   ```
 
-**💡 Note**: You must commit each workflow file separately - GitHub's web interface doesn't allow editing multiple files in one commit.
+#### **What the Script Does:**
+- ✅ **Preserves Azure's automatic authentication** (service principals, secrets, GitHub integration)
+- ✅ **Fixes monorepo project paths** for both API and MCP services
+- ✅ **Creates automatic backups** before making changes
+- ✅ **Works for both services** - detects API vs MCP workflows automatically
+- ✅ **Safe and reliable** - thoroughly tested for workshop environments
+
+#### **Why This Approach Works Best:**
+- 🚀 **Fast**: One command vs manual editing of multiple files
+- 🔒 **Secure**: Keeps all Azure-generated authentication setup intact
+- 🛡️ **Safe**: Automatic backups in case you need to revert
+- 🎯 **Workshop-friendly**: No complex YAML editing required
+- ✅ **Educational**: Shows automation best practices
+
+> **� Technical Details**: See [Azure Workflow Configuration Guide](../../docs/deployment/AZURE-WORKFLOW-CONFIGURATION.md) for complete documentation on this approach.
 
 ### 5.4 Verify CI/CD Pipeline Setup
 
@@ -493,7 +600,30 @@ Confirm everything is working:
 
 **CI/CD Pipeline Fails:**
 - **Problem**: GitHub Actions workflow errors
-- **Solution**: Verify Azure credentials are correctly configured in GitHub secrets
+- **Solution**: 
+  1. First, run the automated fix script: `.\scripts\Fix-AzureWorkflows.ps1`
+  2. If still failing, verify Azure credentials are correctly configured in GitHub secrets
+  3. Check that workflow files exist in `.github/workflows/` directory
+
+**Workflow Fix Script Issues:**
+- **Problem**: Script reports "No workflow files found"
+- **Solution**: 
+  1. Ensure Azure Portal has created deployment workflows (check `.github/workflows/` folder on GitHub)
+  2. Make sure you have cloned your fork locally (see Step 3.5 if needed)
+  3. Verify you're running the script from the repository root directory
+  4. Confirm you completed the Azure Deployment Center setup first
+
+- **Problem**: "Can't find the script file"
+- **Solution**:
+  1. Ensure you cloned your fork to your local machine (Step 3.5)
+  2. Navigate to the correct directory: `cd Fabrikam-Project`
+  3. Verify the script exists: `dir scripts\Fix-AzureWorkflows.ps1`
+
+- **Problem**: Script runs but deployments still fail  
+- **Solution**:
+  1. Check the script output - it creates backups you can review
+  2. Manually verify the `dotnet publish` lines include project paths
+  3. Try running the script again with `-WhatIf` to preview changes
 
 **API Not Accessible:**
 - **Problem**: Can't reach the Swagger interface
